@@ -1,10 +1,3 @@
-// custom api version
-
-// There is a lot of duplicated code here, but it is very easy to refactor.
-// The current state is mainly convenient for making targeted changes at any time,
-// and it has not yet had a negative impact on maintenance.
-// If necessary, I will refactor.
-
 import { getUserConfig } from '../../config/index.mjs'
 import { fetchSSE } from '../../utils/fetch-sse.mjs'
 import { getConversationPairs } from '../../utils/get-conversation-pairs.mjs'
@@ -44,6 +37,10 @@ export async function generateAnswersWithCustomApi(
     console.debug('conversation history', { content: session.conversationRecords })
     port.postMessage({ answer: null, done: true, session: session })
   }
+
+  // Determine which token parameter to use based on modelName
+  const tokenParameter = modelName.startsWith('o1') ? 'max_completion_tokens' : 'max_tokens'
+
   await fetchSSE(apiUrl, {
     method: 'POST',
     signal: controller.signal,
@@ -55,7 +52,7 @@ export async function generateAnswersWithCustomApi(
       messages: prompt,
       model: modelName,
       stream: true,
-      max_tokens: config.maxResponseTokenLength,
+      [tokenParameter]: config.maxResponseTokenLength, // Use the correct token parameter
       temperature: config.temperature,
     }),
     onMessage(message) {
